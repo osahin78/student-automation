@@ -24,7 +24,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-## TEST
+## TEST ( only OSX/Linux terminal)
 
 ```bash
 curl --location '127.0.0.1:8000/api/' \
