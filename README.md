@@ -30,7 +30,7 @@ python manage.py runserver
 curl --location '127.0.0.1:8000/api/' \
 --header 'Content-Type: application/json' \
 --data '{
-    "name": "",
+    "name": "Ali",
     "surname": "Yilmaz",
     "stdNumber": "B012X00055",
     "grades": [
