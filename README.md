@@ -12,7 +12,7 @@ git clone https://github.com/osahin78/student-automation.git
 cd student-automation
 python -m venv venv
 venv\Scripts\activate.bat
-python -m pip install Django
+pip install -r requirements.txt
 python -m pip install --upgrade pip
 code .
 
@@ -27,7 +27,7 @@ python manage.py runserver
 ## TEST ( only OSX/Linux terminal)
 
 ```bash
-curl --location '127.0.0.1:8000/api/' \
+curl --location '127.0.0.1:8000/api/student/' \
 --header 'Content-Type: application/json' \
 --data '{
     "name": "Ali",

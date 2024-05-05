@@ -1,61 +1,82 @@
 import json
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import JsonResponse
 from api.models import Student
+from django.views import View
+from cerberus import Validator
 
-def grade_average(grades):
-    result=[]
-    result1=[]
-    for item1 in grades:
-        count=0
-        for item2 in result:
-            if item1["code"]==item2["code"]:
-                count+=1                
-                item2["value"]+=item1["value"]
-                item2["count"]+=1
-        if count==0:                    
-            result.append({"code":item1["code"],"value":item1["value"],"count":1})           
-    for item in result:
-        result1.append({"code":item["code"],"value":item["value"]/item["count"]})       
-    return result1
- 
-def api_home(request: HttpRequest, *args, **kwargs):
-    pk=0
-    try:
-        if request.method == "POST":
+class StudentView(View):
+    sample_post_request = {
+        "name": "John",
+        "surname": "Doe",
+        "stdNumber": "B012X00012",
+        "grades": [
+            {
+                "code": "MT101",
+                "value": 90
+            },
+            {
+                "code": "MT101",
+                "value": 75
+            },
+            {
+                "code": "CH101",
+                "value": 60
+            },
+            {
+                "code": "MT101",
+                "value": 70
+            },
+            {
+                "code": "HS101",
+                "value": 65
+            }
+        ]
+    }
+    
+    post_schema = {
+        "name": {
+            "required": True,
+            "type": "string"
+        },
+        "surname": {
+            "required": True,
+            "type": "string"
+        },
+        "stdNumber": {
+            "required": True,
+            "type": "string"
+        },
+        "grades": {
+            "required": True,
+            "type": "list",
+            "schema": {
+                "type": "dict",
+                "schema": {
+                    "code": {"type": "string"},
+                    "value": {"type": "integer"}
+                }
+            }
+        }
+    }
+
+    def options(self, request, *args, **kwargs):
+        return JsonResponse(self.post_schema)
+
+    def post(self, request, *args, **kwargs):
+        try:
             body_unicode = request.body.decode('utf-8')
             body = json.loads(body_unicode)
-            nGrades=grade_average(body["grades"])
-            student=Student(name=body["name"],surname=body["surname"],stdNumber=body["stdNumber"],grades=nGrades)
+            v = Validator(schema=self.post_schema)
+            if not v.validate(body):
+                return JsonResponse(v.errors, safe=False, status=400)
+            student = Student(**body)
+            student.grades = student.calculate_grades()
             student.save()
-            pk=student.pk
-
-        
-        # print(Student.objects.filter(pk=pk).values())
-        # print(model_to_dict(Student.objects.filter(pk=pk)))
-
-        return JsonResponse({'message':list(Student.objects.filter(pk=pk).values())})
-    except:
-        return HttpResponse(content="""Here is a sample request: {
-            "name": "Ali",
-            "surname": "Yilmaz",
-            "stdNumber": "B012X00012",
-            "grades": [
-                            
-            {
-            "code": "MT101",
-            "value": 90
-            }, {
-            "code": "PH101",
-            "value": 75
-            }, {
-            "code": "CH101",
-            "value": 60
-            }, {
-            "code": "MT101",
-            "value": 70
-            }, {
-            "code": "HS101",
-            "value": 65
-            }
-            ]}""",status=409)
-    
+            data = list(Student.objects.filter(pk=student.pk).values())[0]
+            return JsonResponse({'data': data})
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error": str(e),
+                "sample_request": self.sample_post_request
+            }, status=400)
